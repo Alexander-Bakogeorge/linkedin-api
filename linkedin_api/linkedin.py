@@ -25,7 +25,7 @@ class Linkedin(object):
     )  # VERY conservative max requests count to avoid rate-limit
 
     def __init__(self, username, password):
-        self.client = Client()
+        self.client = Client(debug=True)
         self.client.authenticate(username, password)
 
         self.logger = logger
@@ -120,6 +120,42 @@ class Linkedin(object):
             )
 
         return results
+
+    def search_companies(self, max_results=None, results=[]):
+        """
+        Do a company search
+        Note: try swap from blended search to cluster
+        """
+        sleep(
+            random.randint(2, 5)
+        )  # sleep a random duration to try and evade suspention
+
+        default_params = {
+            "origin": "GLOBAL_SEARCH_HEADER",
+            "guides": "List(resultType->companies)",
+            "count": "10",
+            "q": "guided",
+            "filters": "List(resultType->companies)",
+            "start": len(results)
+        }
+        res = self.client.session.get(
+            f"{self.client.API_BASE_URL}/search/blended?origin=SWITCH_SEARCH_VERTICAL&count=10&q=all&filters=List(resultType-%3Ecompanies)&start={len(results)}"
+        )
+        
+        data = res.json()
+
+        if (
+            len(data["elements"]) == 0 or
+            len(data["elements"][0]["elements"]) == 0 
+            or (max_results is not None and len(results) >= max_results)
+            or (max_results is not None and len(results) / max_results >= Linkedin._MAX_REPEATED_REQUESTS)
+        ):
+            return results
+
+        results.extend(data["elements"][0]["elements"])
+        self.logger.debug(f"results grew: {len(results)}")
+        
+        return self.search_companies(max_results=max_results, results=results)
 
     def get_profile_contact_info(self, public_id=None, urn_id=None):
         """
