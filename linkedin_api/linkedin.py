@@ -130,6 +130,17 @@ class Linkedin(object):
             random.randint(2, 5)
         )  # sleep a random duration to try and evade suspention
 
+        #Search params from main search, here for reference
+        '''
+        default_params = {
+            "count": count,
+            "guides": "List()",
+            "origin": "GLOBAL_SEARCH_HEADER",
+            "q": "guided",
+            "start": len(results),
+        }
+        '''
+
         default_params = {
             "origin": "GLOBAL_SEARCH_HEADER",
             "guides": "List(resultType->companies)",
@@ -138,15 +149,20 @@ class Linkedin(object):
             "filters": "List(resultType->companies)",
             "start": len(results)
         }
+
         res = self.client.session.get(
-            f"{self.client.API_BASE_URL}/search/blended?origin=SWITCH_SEARCH_VERTICAL&count=10&q=all&filters=List(resultType-%3Ecompanies)&start={len(results)}"
+            f"{self.client.API_BASE_URL}/search/blended?origin=GLOBAL_SEARCH_HEADER&count=10&guides=List(resultType-%3Ecompanies)&q=all&filters=List(resultType-%3Ecompanies)&start={len(results)}"
+            #f"{self.client.API_BASE_URL}/search/blended", params=default_params
         )
         
         data = res.json()
 
+        total_found = data.get("paging", {}).get("total")
+
         if (
             len(data["elements"]) == 0 or
             len(data["elements"][0]["elements"]) == 0 
+            or total_found is None
             or (max_results is not None and len(results) >= max_results)
             or (max_results is not None and len(results) / max_results >= Linkedin._MAX_REPEATED_REQUESTS)
         ):
@@ -266,6 +282,20 @@ class Linkedin(object):
         Return a list of profile ids connected to profile of given [urn_id]
         """
         return self.search_people(connection_of=urn_id, network_depth="F")
+
+    def get_profile_networkinfo(self, urn_id):
+        """
+        Return the nework info connected to the profile of the given [urn_id]
+        """
+        sleep(
+            random.randint(2, 5)
+        )  # sleep a random duration to try and evade suspention
+
+        res = self.client.session.get(
+            f"{self.client.API_BASE_URL}/identity/profiles/{urn_id}/networkinfo"
+        )
+
+        return res.json()
 
     def get_company_updates(self, public_id=None, urn_id=None, max_results=None, results=[]):
         """"
