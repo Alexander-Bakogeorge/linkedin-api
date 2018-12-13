@@ -151,8 +151,7 @@ class Linkedin(object):
         }
 
         res = self.client.session.get(
-            f"{self.client.API_BASE_URL}/search/blended?origin=GLOBAL_SEARCH_HEADER&count=10&guides=List(resultType-%3Ecompanies)&q=all&filters=List(resultType-%3Ecompanies)&start={len(results)}"
-            #f"{self.client.API_BASE_URL}/search/blended", params=default_params
+            f"{self.client.API_BASE_URL}/search/blended?keywords=s&origin=GLOBAL_SEARCH_HEADER&count=10&guides=List(resultType-%3Ecompanies)&q=all&filters=List(resultType-%3Ecompanies)&start={len(results)}"
         )
         
         data = res.json()
@@ -427,6 +426,24 @@ class Linkedin(object):
         school = data["elements"][0]
 
         return school
+
+    def get_similar_companies(self, public_id):
+        """
+        Return similar companies for a single company.
+
+        [public_id] - public identifier i.e. univeristy-of-queensland
+        """
+        sleep(
+            random.randint(2, 5)
+        )  # sleep a random duration to try and evade suspention
+
+        res = self.client.session.get(
+            f"{self.client.API_BASE_URL}/organization/companies?count={Linkedin._MAX_SEARCH_COUNT}&companyUniversalName={public_id}&q=similarCompanies&start=0&decorationId=com.linkedin.voyager.deco.organization.web.WebSimilarCompanyCardWithRelevanceReason-3"
+        )
+
+        data = res.json()
+
+        return data
 
     def get_company(self, public_id):
         """
